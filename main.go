@@ -73,12 +73,6 @@ func GetMappedData(raw string, handle string) map[string]string {
 	return dataMap
 }
 
-type User struct {
-	ID        int      `json:"ID"`
-	Name      string   `json:"Name"`
-	Resources []string `json:"Resources"`
-}
-
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
