@@ -5,81 +5,28 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 )
 
 import _ "github.com/go-sql-driver/mysql"
 
-const (
-	host      = "localhost"
-	port      = ":2096"
-	user      = "gsgauth"
-	password  = "password"
-	dbname    = "authentication"
-	userTable = "users"
-	//resourcesTable = "resources"
-	logTable     = "logs"
-	responseData = "com.gameservergroup.gsgcore.AuthenticationTest:map:java.util.HashMap---com.gameservergroup.gsgcore.AuthenticationTest:list:java.util.ArrayList"
-)
-
 var (
-	mysql               *sql.DB   = nil
-	stmtSelectResources *sql.Stmt = nil
-	stmtInsertLog       *sql.Stmt = nil
+	mysql                  *sql.DB   = nil
+	stmtSelectResources    *sql.Stmt = nil
+	stmtInsertLog          *sql.Stmt = nil
+	stmtSelectResponseData *sql.Stmt = nil
 )
-
-func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	query := request.URL.Query()
-
-	println("query=", query.Encode())
-
-	dataParam := query.Get("data")
-	tokenParam := query.Get("token")
-	resourceParam := query.Get("resource")
-
-	if dataParam == "" || tokenParam == "" || resourceParam == "" {
-		_, _ = responseWriter.Write([]byte("Suck my dick bitch boi, stop trying to hack me cuck"))
-	} else {
-		whitelistedResources := GetResources(tokenParam)
-		requestedResource := resourceParam
-
-		if CanUseResources(requestedResource, whitelistedResources) {
-			var authenticationData AuthenticationData
-			responseWriter.Header().Set("Content-Type", "text/plain")
-			_, _ = responseWriter.Write([]byte(responseData))
-			decodeString, err := base64.StdEncoding.DecodeString(dataParam)
-			CheckErr(err)
-			err = json.Unmarshal([]byte(decodeString), &authenticationData)
-			CheckErr(err)
-			authenticationData.ToString()
-			LogAuthentcation(tokenParam, authenticationData)
-		} else {
-			_, _ = responseWriter.Write([]byte("Suck my dick bitch boi, stop trying to hack me cuck"))
-		}
-	}
-}
-
-func CanUseResources(resource string, resources []string) bool {
-	if resource == "" || resources == nil {
-		return false
-	}
-	for e := range resources {
-		s := resources[e]
-		if s == resource || s == "*" {
-			return true
-		}
-	}
-	return false
-}
+var config *Config
 
 func main() {
-	db, err := sql.Open("mysql", user+":"+password+"@tcp("+host+")/"+dbname)
+	config = config.SetupConfig()
+	db, err := sql.Open("mysql", config.User+":"+config.Password+"@tcp("+config.Host+")/"+config.DbName)
 	CheckErr(err)
 
 	mysql = db
 
+	CreateTables()
 	InitPreparedStatements()
 
 	mux := http.NewServeMux()
@@ -101,7 +48,7 @@ func main() {
 	})
 	srv := &http.Server{
 
-		Addr:         port,
+		Addr:         config.Port,
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
@@ -109,16 +56,64 @@ func main() {
 	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
 }
 
-func InitPreparedStatements() {
-	stmt, err := mysql.Prepare("SELECT resources FROM " + userTable + " WHERE token = ?")
-	CheckErr(err)
-	stmtSelectResources = stmt
-	stmt, err = mysql.Prepare("INSERT INTO " + logTable + " (token, resource, ip_address, os_name, os_arch, os_version, user_name, computer_name, processor_identifier, processor_architecture, number_of_processors, operators) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-	CheckErr(err)
-	stmtInsertLog = stmt
+func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
+	query := request.URL.Query()
+
+	dataParam := query.Get("data")
+	tokenParam := query.Get("token")
+	resourceParam := query.Get("resource")
+
+	if dataParam == "" || tokenParam == "" || resourceParam == "" {
+		_, _ = responseWriter.Write([]byte("Suck my dick bitch boi, stop trying to hack me cuck"))
+	} else {
+		whitelistedResources := GetResources(tokenParam)
+		requestedResource := resourceParam
+
+		if CanUseResources(requestedResource, whitelistedResources) {
+			var authenticationData AuthenticationData
+			responseWriter.Header().Set("Content-Type", "text/plain")
+			decodeString, err := base64.StdEncoding.DecodeString(dataParam)
+			CheckErr(err)
+			err = json.Unmarshal([]byte(decodeString), &authenticationData)
+			CheckErr(err)
+			authenticationData.ToString()
+			LogAuthentication(tokenParam, authenticationData)
+			queryRow := stmtSelectResponseData.QueryRow(resourceParam)
+			var responseData string
+			err = queryRow.Scan(&responseData)
+			if err != nil {
+				_, _ = responseWriter.Write([]byte("Dd-d-d-d-d-d-done"))
+			} else {
+				_, _ = responseWriter.Write([]byte(responseData))
+			}
+		} else {
+			_, _ = responseWriter.Write([]byte("Suck my dick bitch boi, stop trying to hack me cuck"))
+		}
+	}
 }
 
-func LogAuthentcation(token string, data AuthenticationData) {
+func CreateTables() {
+	_, err := mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.LogTable + " (id INT AUTO_INCREMENT NOT NULL, time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,token varchar(12) NOT NULL,resource varchar(255) NOT NULL,ip_address varchar(255) NOT NULL,os_name varchar(255) NOT NULL,os_arch varchar(255) NOT NULL,os_version varchar(255) NOT NULL,user_name varchar(255) NOT NULL,computer_name varchar(255) NOT NULL,processor_identifier varchar(255) NOT NULL,processor_architecture varchar(255) NOT NULL,number_of_processors INT NOT NULL,operators nvarchar(4096),PRIMARY KEY(id))")
+	CheckErr(err)
+	_, err = mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.UserTable + " (id INT NOT NULL AUTO_INCREMENT, token varchar(12) NOT NULL, discord_id BIGINT NOT NULL, resources nvarchar(1024), ip_addresses nvarchar(1024), PRIMARY KEY(id))")
+	CheckErr(err)
+	_, err = mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.ResourcesTable + " (id INT NOT NULL AUTO_INCREMENT, resource_name varchar(1024) NOT NULL, response_data nvarchar(8192) NOT NULL,PRIMARY KEY(id))")
+	CheckErr(err)
+}
+
+func InitPreparedStatements() {
+	stmt, err := mysql.Prepare("SELECT resources FROM " + config.Tables.UserTable + " WHERE token = ?")
+	CheckErr(err)
+	stmtSelectResources = stmt
+	stmt, err = mysql.Prepare("INSERT INTO " + config.Tables.LogTable + " (token, resource, ip_address, os_name, os_arch, os_version, user_name, computer_name, processor_identifier, processor_architecture, number_of_processors, operators) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+	CheckErr(err)
+	stmtInsertLog = stmt
+	stmt, err = mysql.Prepare("SELECT response_data FROM " + config.Tables.ResourcesTable + " WHERE resource_name = ?")
+	CheckErr(err)
+	stmtSelectResponseData = stmt
+}
+
+func LogAuthentication(token string, data AuthenticationData) {
 	bytes, err := json.Marshal(data.Operators)
 	CheckErr(err)
 	_, err = stmtInsertLog.Exec(token, data.Resource, data.IPAddress, data.OsName, data.OsArch, data.OsVersion, data.UserName, data.ComputerName, data.ProcessorIdentifier, data.ProcessorArchitecture, data.NumberOfProcessors, string(bytes))
@@ -139,28 +134,4 @@ func GetResources(token string) []string {
 		return nil
 	}
 	return resourcesArray
-}
-
-func CheckErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-type AuthenticationData struct {
-	Resource              string   `json:"resource"`
-	IPAddress             string   `json:"ipAddress"`
-	OsName                string   `json:"osName"`
-	OsArch                string   `json:"osArch"`
-	OsVersion             string   `json:"osVersion"`
-	UserName              string   `json:"userName"`
-	ProcessorIdentifier   string   `json:"processorIdentifier"`
-	ComputerName          string   `json:"computerName"`
-	ProcessorArchitecture string   `json:"processorArchitecture"`
-	NumberOfProcessors    int      `json:"numberOfProcessors"`
-	Operators             []string `json:"operators"`
-}
-
-func (a AuthenticationData) ToString() {
-	fmt.Printf("%+v\n", a)
 }

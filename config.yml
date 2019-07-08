@@ -1,0 +1,9 @@
+host: 'localhost'
+port: ':2096'
+user: 'gsgauth'
+password: 'password'
+database-name: 'authentication'
+tables:
+  users: 'users'
+  resources: 'resources'
+  logs: 'logs'
