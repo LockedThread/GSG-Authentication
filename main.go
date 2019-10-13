@@ -12,10 +12,10 @@ import (
 import _ "github.com/go-sql-driver/mysql"
 
 var (
-	mysql                  *sql.DB   = nil
-	stmtSelectResources    *sql.Stmt = nil
-	stmtInsertLog          *sql.Stmt = nil
-	stmtSelectResponseData *sql.Stmt = nil
+	mysql                            *sql.DB   = nil
+	stmtSelectResourcesFromUserTable *sql.Stmt = nil
+	stmtInsertLog                    *sql.Stmt = nil
+	stmtSelectResponseData           *sql.Stmt = nil
 )
 var config *Config
 
@@ -104,7 +104,7 @@ func CreateTables() {
 func InitPreparedStatements() {
 	stmt, err := mysql.Prepare("SELECT resources FROM " + config.Tables.UserTable + " WHERE token = ?")
 	CheckErr(err)
-	stmtSelectResources = stmt
+	stmtSelectResourcesFromUserTable = stmt
 	stmt, err = mysql.Prepare("INSERT INTO " + config.Tables.LogTable + " (token, resource, ip_address, os_name, os_arch, os_version, user_name, computer_name, processor_identifier, processor_architecture, number_of_processors, operators) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	CheckErr(err)
 	stmtInsertLog = stmt
@@ -122,7 +122,7 @@ func LogAuthentication(token string, data AuthenticationData) {
 
 func GetResources(token string) []string {
 	var resourcesString string
-	err := stmtSelectResources.QueryRow(token).Scan(&resourcesString)
+	err := stmtSelectResourcesFromUserTable.QueryRow(token).Scan(&resourcesString)
 	if err != nil {
 		println(err)
 		return nil
