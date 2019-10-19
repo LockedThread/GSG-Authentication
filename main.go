@@ -74,7 +74,7 @@ func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *
 			responseWriter.Header().Set("Content-Type", "text/plain")
 			decodeString, err := base64.StdEncoding.DecodeString(dataParam)
 			CheckErr(err)
-			err = json.Unmarshal([]byte(decodeString), &authenticationData)
+			err = json.Unmarshal(decodeString, &authenticationData)
 			CheckErr(err)
 			authenticationData.ToString()
 			LogAuthentication(tokenParam, authenticationData)
