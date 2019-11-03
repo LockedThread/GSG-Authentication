@@ -57,9 +57,6 @@ func main() {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
-	err = srv.ListenAndServeTLS("server.crt", "server.key")
-	CheckErr(err)
-
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -68,6 +65,8 @@ func main() {
 		_ = mysql.Close()
 		os.Exit(1)
 	}()
+	err = srv.ListenAndServeTLS("server.crt", "server.key")
+	CheckErr(err)
 }
 
 func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
