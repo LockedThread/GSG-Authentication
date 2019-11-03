@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -62,7 +63,7 @@ func main() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 	_ = mysql.Close()
-	_ = srv.ListenAndServeTLS("server.crt", "server.key")
+	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
 }
 
 func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
