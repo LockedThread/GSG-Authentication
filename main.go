@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 import _ "github.com/go-sql-driver/mysql"
@@ -53,7 +56,13 @@ func main() {
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
-	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
+
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+	_ = mysql.Close()
+	_ = srv.ListenAndServeTLS("server.crt", "server.key")
 }
 
 func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
