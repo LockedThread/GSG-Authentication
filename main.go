@@ -97,7 +97,7 @@ func CreateTables() {
 	CheckErr(err)
 	_, err = mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.UserTable + " (id INT NOT NULL AUTO_INCREMENT, token varchar(12) NOT NULL, discord_id BIGINT NOT NULL, resources nvarchar(1024), ip_addresses nvarchar(1024), PRIMARY KEY(id))")
 	CheckErr(err)
-	_, err = mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.ResourcesTable + " (id INT NOT NULL AUTO_INCREMENT, resource_name varchar(1024) NOT NULL, response_data nvarchar(8192) NOT NULL,PRIMARY KEY(id))")
+	_, err = mysql.Exec("CREATE TABLE IF NOT EXISTS " + config.Tables.ResourcesTable + " (id INT NOT NULL AUTO_INCREMENT, resource_name varchar(1024) NOT NULL, response_data nvarchar(8192) NOT NULL, channel_id varchar(18), PRIMARY KEY(id))")
 	CheckErr(err)
 }
 
