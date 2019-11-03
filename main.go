@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,12 +57,17 @@ func main() {
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
 	}
 
+	err = srv.ListenAndServeTLS("server.crt", "server.key")
+	CheckErr(err)
+
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
-	<-sc
-	_ = mysql.Close()
-	log.Fatal(srv.ListenAndServeTLS("server.crt", "server.key"))
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		_ = mysql.Close()
+		os.Exit(1)
+	}()
 }
 
 func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
