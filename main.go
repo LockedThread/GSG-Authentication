@@ -51,7 +51,7 @@ func main() {
 	})
 	srv := &http.Server{
 
-		Addr:         config.Port,
+		Addr:         "0.0.0.0:8443",
 		Handler:      mux,
 		TLSConfig:    cfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
