@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 )
 
@@ -129,7 +130,9 @@ func InitPreparedStatements() {
 func LogAuthentication(token string, data AuthenticationData) {
 	bytes, err := json.Marshal(data.Operators)
 	CheckErr(err)
-	_, err = stmtInsertLog.Exec(token, data.Resource, data.IPAddress, data.OsName, data.OsArch, data.OsVersion, data.UserName, data.ComputerName, data.ProcessorIdentifier, data.ProcessorArchitecture, data.NumberOfProcessors, string(bytes))
+	i, err := strconv.Atoi(data.NumberOfProcessors)
+	CheckErr(err)
+	_, err = stmtInsertLog.Exec(token, data.Resource, data.IPAddress, data.OsName, data.OsArch, data.OsVersion, data.UserName, data.ComputerName, data.ProcessorIdentifier, data.ProcessorArchitecture, i, string(bytes))
 	CheckErr(err)
 }
 

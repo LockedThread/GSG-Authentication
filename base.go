@@ -12,7 +12,7 @@ type AuthenticationData struct {
 	ProcessorIdentifier   string   `json:"processorIdentifier"`
 	ComputerName          string   `json:"computerName"`
 	ProcessorArchitecture string   `json:"processorArchitecture"`
-	NumberOfProcessors    int      `json:"numberOfProcessors"`
+	NumberOfProcessors    string   `json:"numberOfProcessors"`
 	Operators             []string `json:"operators"`
 }
 
