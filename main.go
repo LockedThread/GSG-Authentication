@@ -130,9 +130,12 @@ func InitPreparedStatements() {
 func LogAuthentication(token string, data AuthenticationData) {
 	bytes, err := json.Marshal(data.Operators)
 	CheckErr(err)
-	i, err := strconv.Atoi(data.NumberOfProcessors)
-	CheckErr(err)
-	_, err = stmtInsertLog.Exec(token, data.Resource, data.IPAddress, data.OsName, data.OsArch, data.OsVersion, data.UserName, data.ComputerName, data.ProcessorIdentifier, data.ProcessorArchitecture, i, string(bytes))
+	var numberOfProcessors int
+	if len(data.NumberOfProcessors) > 0 {
+		numberOfProcessors, err = strconv.Atoi(data.NumberOfProcessors)
+		CheckErr(err)
+	}
+	_, err = stmtInsertLog.Exec(token, data.Resource, data.IPAddress, data.OsName, data.OsArch, data.OsVersion, data.UserName, data.ComputerName, data.ProcessorIdentifier, data.ProcessorArchitecture, numberOfProcessors, string(bytes))
 	CheckErr(err)
 }
 
