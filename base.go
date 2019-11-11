@@ -17,5 +17,5 @@ type AuthenticationData struct {
 }
 
 func (a AuthenticationData) ToString() {
-	fmt.Printf("%+v\n", a)
+	fmt.Printf("authenticationData=%+v\n", a)
 }

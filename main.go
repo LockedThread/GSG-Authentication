@@ -88,6 +88,7 @@ func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *
 			responseWriter.Header().Set("Content-Type", "text/plain")
 			decodeString, err := base64.StdEncoding.DecodeString(dataParam)
 			CheckErr(err)
+			println("decodeString=", decodeString)
 			err = json.Unmarshal(decodeString, &authenticationData)
 			CheckErr(err)
 			authenticationData.ToString()
