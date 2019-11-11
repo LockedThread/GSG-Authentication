@@ -72,18 +72,25 @@ func main() {
 
 func AuthenticationResponseHandler(responseWriter http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
+	println(query.Encode())
 
 	dataParam := query.Get("data")
 	tokenParam := query.Get("token")
 	resourceParam := query.Get("resource")
 
+	println(dataParam)
+	println(tokenParam)
+	println(resourceParam)
+
 	if dataParam == "" || tokenParam == "" || resourceParam == "" {
 		_, _ = responseWriter.Write([]byte("Suck my dick bitch boi, stop trying to hack me cuck"))
 	} else {
 		whitelistedResources := GetResources(tokenParam)
+		println(whitelistedResources)
 		requestedResource := resourceParam
-
+		println(requestedResource)
 		if CanUseResources(requestedResource, whitelistedResources) {
+			println("Can use resources")
 			var authenticationData AuthenticationData
 			responseWriter.Header().Set("Content-Type", "text/plain")
 			decodeString, err := base64.StdEncoding.DecodeString(dataParam)
